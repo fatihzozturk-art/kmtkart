@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kartvizit">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>Kartvizit Tarayıcı</title>
+<style>
+  :root{--bg:#0a0a0f;--sf:#14141f;--sf2:#1c1c2e;--ac:#6c63ff;--acg:rgba(108,99,255,0.3);--acs:rgba(108,99,255,0.12);--tx:#f0eef6;--tx2:#9490b0;--bd:#2a2a42;--gn:#4ade80;--gnb:rgba(74,222,128,0.1);--rd:#f87171;--rdb:rgba(248,113,113,0.1)}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',system-ui,sans-serif;min-height:100vh;min-height:100dvh;padding-top:env(safe-area-inset-top)}
+  .app{max-width:480px;margin:0 auto;padding-bottom:120px}
+  .hdr{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--bd);padding:16px 20px 12px;padding-top:calc(16px + env(safe-area-inset-top))}
+  .hdr-row{display:flex;align-items:center;justify-content:space-between}
+  .logo{font-size:22px;font-weight:800;letter-spacing:-0.03em;background:linear-gradient(135deg,var(--tx),var(--ac));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{font-size:12px;color:var(--tx2);margin-top:2px}
+  .h-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--sf);color:var(--tx2);font-size:11px;font-weight:600;cursor:pointer}
+  .search{margin-top:12px;width:100%;padding:10px 14px;background:var(--sf);border:1px solid var(--bd);border-radius:12px;color:var(--tx);font-size:14px;outline:none}
+  .search::placeholder{color:var(--tx2)}
+  .mode-row{display:flex;gap:0;margin:12px 20px 0;border-radius:12px;overflow:hidden;border:1px solid var(--bd)}
+  .mode-btn{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;background:var(--sf);color:var(--tx2)}
+  .mode-btn.active{background:var(--ac);color:#fff}
+  .empty{padding:60px 36px;text-align:center}
+  .empty-ico{font-size:56px;margin-bottom:14px}
+  .empty-t{font-size:19px;font-weight:700}
+  .empty-d{font-size:13px;color:var(--tx2);margin-top:8px;line-height:1.6}
+  .steps{display:flex;gap:18px;justify-content:center;margin-top:24px}
+  .stp{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .stp-ico{width:48px;height:48px;border-radius:13px;background:var(--acs);display:flex;align-items:center;justify-content:center;font-size:20px}
+  .stp-l{font-size:10px;color:var(--tx2);font-weight:600}
+  .list{padding:12px 20px}
+  .card{background:var(--sf);border-radius:16px;border:1px solid var(--bd);overflow:hidden;margin-bottom:10px}
+  .card-hdr{padding:14px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .card-name{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-sub{font-size:12px;color:var(--tx2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-acts{display:flex;gap:5px;align-items:center;flex-shrink:0}
+  .mbtn{width:33px;height:33px;border-radius:9px;border:none;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;cursor:pointer}
+  .mbtn-p{background:var(--gnb)}.mbtn-e{background:var(--acs)}
+  .chev{font-size:11px;color:var(--tx2);transition:transform 0.3s;display:inline-block}
+  .chev.open{transform:rotate(180deg)}
+  .card-body{border-top:1px solid var(--bd);padding:16px;display:none}
+  .card-body.open{display:block}
+  .frow{display:flex;gap:9px;align-items:flex-start;margin-bottom:9px}
+  .fico{font-size:14px;width:20px;flex-shrink:0;text-align:center}
+  .flab{font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.07em}
+  .fval{font-size:13px;color:var(--tx);margin-top:1px;word-break:break-word}
+  .card-btns{display:flex;gap:7px;margin-top:12px;justify-content:flex-end;flex-wrap:wrap}
+  .btn{padding:8px 14px;border-radius:9px;font-size:11px;font-weight:600;cursor:pointer;border:none}
+  .btn-del{border:1px solid rgba(248,113,113,0.3);background:var(--rdb);color:var(--rd)}
+  .btn-edt{border:1px solid var(--bd);background:var(--sf2);color:var(--tx)}
+  .btn-vcf{background:var(--ac);color:#fff}
+  .btn-cancel{border:1px solid var(--bd);background:transparent;color:var(--tx2)}
+  .btn-save{background:var(--ac);color:#fff}
+  .edt-f{margin-bottom:9px}
+  .edt-f label{display:block;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px}
+  .edt-f input{width:100%;padding:9px 11px;background:var(--bg);border:1px solid var(--bd);border-radius:9px;color:var(--tx);font-size:13px;outline:none}
+  .nores{text-align:center;padding:40px 20px;color:var(--tx2)}
+  .nores-ico{font-size:32px;margin-bottom:8px}
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:300;transition:transform 0.4s cubic-bezier(0.175,0.885,0.32,1.275);max-width:90%;text-align:center}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.ok{background:#065f46;color:#6ee7b7;border:1px solid #10b981}
+  .toast.err{background:#7f1d1d;color:#fca5a5;border:1px solid #f87171}
+  .fab-wrap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;padding-bottom:env(safe-area-inset-bottom)}
+  .fab{width:62px;height:62px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--ac),#8b5cf6);color:#fff;font-size:28px;cursor:pointer;box-shadow:0 8px 32px var(--acg);display:flex;align-items:center;justify-content:center;transition:transform 0.15s}
+  .fab:active{transform:scale(0.9)}.fab:disabled{opacity:0.5}
+  .fab-l{font-size:11px;color:var(--tx2);font-weight:600;margin-top:5px}
+  .ov{position:fixed;inset:0;background:rgba(10,10,15,0.9);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(8px)}
+  .ov.show{display:flex}
+  .ov-ico{width:52px;height:52px;border-radius:14px;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:26px;animation:pulse 1.4s ease-in-out infinite}
+  .ov-t{margin-top:14px;font-size:15px;font-weight:600}
+  .ov-s{margin-top:4px;font-size:12px;color:var(--tx2)}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:0.7}}
+  .info-bar{margin:12px 20px 0;padding:10px 14px;border-radius:10px;background:var(--gnb);border:1px solid rgba(74,222,128,0.2);font-size:12px;color:var(--gn);text-align:center;font-weight:600;display:none}
+  .info-bar.show{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div class="hdr-row">
+      <div><div class="logo">📇 Kartvizit</div><div class="sub" id="counter">0 kişi</div></div>
+      <button class="h-btn" id="csvBtn" style="display:none" onclick="exportCSV()">📤 CSV</button>
+    </div>
+    <input class="search" id="searchInput" type="text" placeholder="🔍 Kişi ara..." style="display:none" oninput="renderList()">
+  </div>
+  <div class="mode-row">
+    <button class="mode-btn active" id="modeCamera" onclick="setMode('camera')">📷 Kamera</button>
+    <button class="mode-btn" id="modeGallery" onclick="setMode('gallery')">🖼️ Galeri</button>
+  </div>
+  <div class="info-bar" id="infoBar"></div>
+  <div class="toast" id="toast"></div>
+  <div class="empty" id="emptyState">
+    <div class="empty-ico">📇</div>
+    <div class="empty-t">Kartvizit Tarayıcı</div>
+    <div class="empty-d">Kartvizit çekin veya galeriden seçin.<br>AI bilgileri okusun, Google Sheets'e kaydetsin.</div>
+    <div class="steps">
+      <div class="stp"><div class="stp-ico">📸</div><div class="stp-l">Çek</div></div>
+      <div class="stp"><div class="stp-ico">🤖</div><div class="stp-l">AI Okur</div></div>
+      <div class="stp"><div class="stp-ico">📊</div><div class="stp-l">Sheets'e Kaydet</div></div>
+    </div>
+  </div>
+  <div class="list" id="contactList"></div>
+  <div class="nores" id="noResult" style="display:none"><div class="nores-ico">🔍</div><div id="noResultText"></div></div>
+</div>
+<div class="fab-wrap">
+  <button class="fab" id="fabBtn" onclick="triggerCapture()">📷</button>
+  <div class="fab-l" id="fabLabel">Tara</div>
+</div>
+<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFile(event)">
+<input type="file" id="galleryInput" accept="image/*" style="display:none" onchange="handleFile(event)">
+<div class="ov" id="overlay">
+  <div class="ov-ico">🔍</div>
+  <div class="ov-t" id="ovTitle">Kartvizit okunuyor...</div>
+  <div class="ov-s" id="ovSub">AI bilgileri çıkarıyor</div>
+</div>
+<script>
+const SHEET_URL='https://script.google.com/macros/s/AKfycbzcxFmXaR3kFpXU7wQlXD78PnRZzRynPC7hjU6ZJ-TjDsZ3hvLoyP84dobBzqWS-Nz_/exec';
+const FIELDS=[{key:'name',label:'İsim',icon:'👤'},{key:'title',label:'Ünvan',icon:'💼'},{key:'company',label:'Şirket',icon:'🏢'},{key:'phone',label:'Telefon',icon:'📱'},{key:'email',label:'E-posta',icon:'✉️'},{key:'website',label:'Website',icon:'🌐'},{key:'address',label:'Adres',icon:'📍'},{key:'other',label:'Diğer',icon:'📝'}];
+let contacts=[];
+let captureMode='camera';
+
+function loadContacts(){try{contacts=JSON.parse(localStorage.getItem('kv_contacts')||'[]')}catch(e){contacts=[]}}
+function saveContacts(){try{localStorage.setItem('kv_contacts',JSON.stringify(contacts))}catch(e){}}
+function toast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type;setTimeout(()=>t.classList.add('show'),10);setTimeout(()=>t.classList.remove('show'),3000)}
+function setMode(m){captureMode=m;document.getElementById('modeCamera').className='mode-btn'+(m==='camera'?' active':'');document.getElementById('modeGallery').className='mode-btn'+(m==='gallery'?' active':'');document.getElementById('fabBtn').textContent=m==='camera'?'📷':'🖼️';document.getElementById('fabLabel').textContent=m==='camera'?'Tara':'Seç'}
+function triggerCapture(){document.getElementById(captureMode==='camera'?'cameraInput':'galleryInput').click()}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function extractJSON(t){try{const m=t.match(/```json\s*([\s\S]*?)```/);if(m)return JSON.parse(m[1].trim())}catch{}try{const m=t.match(/\{[\s\S]*\}/);if(m)return JSON.parse(m[0])}catch{}return null}
+
+function resizeImage(file,maxSize){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=function(e){
+      const img=new Image();
+      img.onload=function(){
+        const canvas=document.createElement('canvas');
+        let w=img.width,h=img.height;
+        if(w>maxSize||h>maxSize){if(w>h){h=Math.round(h*maxSize/w);w=maxSize}else{w=Math.round(w*maxSize/h);h=maxSize}}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.85).split(',')[1]);
+      };
+      img.onerror=reject;img.src=e.target.result;
+    };
+    reader.onerror=reject;reader.readAsDataURL(file);
+  });
+}
+
+async function analyzeCard(base64){
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
+        {type:'text',text:'Bu bir kartvizit fotoğrafı. Tüm bilgileri çıkar ve SADECE JSON döndür:\n{"name":"","title":"","company":"","phone":"","email":"","website":"","address":"","other":""}\nBoş alanları boş string bırak. Birden fazla telefon varsa virgülle ayır.'}
+      ]}]})
+  });
+  const data=await res.json();
+  if(data.error)throw new Error(data.error.message||'API hatası');
+  return extractJSON((data.content||[]).map(c=>c.text||'').join(''));
+}
+
+async function sendToSheet(contact){
+  try{await fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(contact)})}catch(e){console.log('Sheet:',e)}
+}
+
+async function handleFile(e){
+  const file=e.target.files?.[0];if(!file)return;e.target.value='';
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('ovTitle').textContent='Kartvizit okunuyor...';
+  document.getElementById('ovSub').textContent='AI bilgileri çıkarıyor';
+  document.getElementById('fabBtn').disabled=true;
+  try{
+    const base64=await resizeImage(file,1200);
+    const result=await analyzeCard(base64);
+    if(result){
+      contacts.unshift(result);saveContacts();
+      document.getElementById('ovSub').textContent="Google Sheets'e kaydediliyor...";
+      await sendToSheet(result);
+      renderList();
+      toast('✅ '+(result.name||'Kartvizit')+" eklendi & Sheets'e kaydedildi!");
+    }else{toast('Okunamadı, tekrar deneyin','err')}
+  }catch(err){toast('Hata: '+err.message,'err')}
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('fabBtn').disabled=false;
+}
+
+function renderList(){
+  const n=contacts.length;
+  document.getElementById('counter').textContent=n+' kişi';
+  document.getElementById('csvBtn').style.display=n?'':'none';
+  document.getElementById('searchInput').style.display=n?'':'none';
+  document.getElementById('emptyState').style.display=n?'none':'';
+  const ib=document.getElementById('infoBar');
+  if(n>0){ib.textContent='📊 '+n+" kartvizit Google Sheets'te kayıtlı";ib.classList.add('show')}else{ib.classList.remove('show')}
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  const filtered=contacts.map((c,i)=>({...c,_i:i})).filter(c=>!q||Object.values(c).some(v=>typeof v==='string'&&v.toLowerCase().includes(q)));
+  const nr=document.getElementById('noResult');
+  nr.style.display=(n&&!filtered.length&&q)?'':'none';
+  if(n&&!filtered.length&&q)document.getElementById('noResultText').textContent='"'+q+'" bulunamadı';
+  document.getElementById('contactList').innerHTML=filtered.map(c=>{
+    const idx=c._i;const sub=[c.title,c.company].filter(Boolean).join(' · ')||'';
+    const ph=c.phone?`<a href="tel:${c.phone.split(',')[0].trim()}" class="mbtn mbtn-p" onclick="event.stopPropagation()">📱</a>`:'';
+    const em=c.email?`<a href="mailto:${c.email}" class="mbtn mbtn-e" onclick="event.stopPropagation()">✉️</a>`:'';
+    const fields=FIELDS.filter(f=>c[f.key]).map(f=>`<div class="frow"><span class="fico">${f.icon}</span><div><div class="flab">${f.label}</div><div class="fval">${esc(c[f.key])}</div></div></div>`).join('');
+    return `<div class="card"><div class="card-hdr" onclick="toggle(${idx})"><div style="flex:1;min-width:0"><div class="card-name">${esc(c.name||'İsimsiz')}</div>${sub?`<div class="card-sub">${esc(sub)}</div>`:''}</div><div class="card-acts">${ph}${em}<span class="chev" id="ch-${idx}">▼</span></div></div><div class="card-body" id="bd-${idx}"><div id="vw-${idx}">${fields}<div class="card-btns"><button class="btn btn-del" onclick="del(${idx})">Sil</button><button class="btn btn-edt" onclick="edit(${idx})">Düzenle</button><button class="btn btn-vcf" onclick="vcf(${idx})">📥 Rehber</button></div></div><div id="ed-${idx}" style="display:none"></div></div></div>`;
+  }).join('');
+}
+
+function toggle(i){document.getElementById('bd-'+i).classList.toggle('open');document.getElementById('ch-'+i).classList.toggle('open')}
+function del(i){if(confirm('Silmek istediğinize emin misiniz?')){contacts.splice(i,1);saveContacts();renderList();toast('Kişi silindi')}}
+function edit(i){
+  const c=contacts[i];document.getElementById('vw-'+i).style.display='none';
+  const ed=document.getElementById('ed-'+i);ed.style.display='';
+  ed.innerHTML=FIELDS.map(f=>`<div class="edt-f"><label>${f.icon} ${f.label}</label><input id="ei-${i}-${f.key}" value="${esc(c[f.key]||'')}"></div>`).join('')+`<div class="card-btns"><button class="btn btn-cancel" onclick="cancelEdit(${i})">İptal</button><button class="btn btn-save" onclick="saveEdit(${i})">Kaydet</button></div>`;
+}
+function cancelEdit(i){document.getElementById('ed-'+i).style.display='none';document.getElementById('vw-'+i).style.display=''}
+function saveEdit(i){FIELDS.forEach(f=>{contacts[i][f.key]=document.getElementById('ei-'+i+'-'+f.key).value});saveContacts();renderList();toast('Güncellendi!')}
+function vcf(i){
+  const c=contacts[i];
+  const v=['BEGIN:VCARD','VERSION:3.0','FN:'+(c.name||''),'ORG:'+(c.company||''),'TITLE:'+(c.title||''),'TEL:'+(c.phone||''),'EMAIL:'+(c.email||''),'URL:'+(c.website||''),'ADR:;;'+(c.address||'')+';;;;','NOTE:'+(c.other||''),'END:VCARD'].join('\n');
+  const blob=new Blob([v],{type:'text/vcard'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=(c.name||'contact')+'.vcf';a.click();URL.revokeObjectURL(url);
+}
+function exportCSV(){
+  const hdr='İsim,Ünvan,Şirket,Telefon,E-posta,Website,Adres,Diğer';
+  const rows=contacts.map(c=>FIELDS.map(f=>`"${(c[f.key]||'').replace(/"/g,'""')}"`).join(','));
+  const blob=new Blob(['\uFEFF'+hdr+'\n'+rows.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='kartvizitler.csv';a.click();URL.revokeObjectURL(url);
+}
+loadContacts();renderList();
+</script>
+</body>
+</html>
