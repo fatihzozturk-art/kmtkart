@@ -118,6 +118,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 <div class="ov-t" id="ovTitle">Kartvizit okunuyor...</div>
 <div class="ov-s" id="ovSub">AI bilgileri çıkarıyor</div>
 </div>
+<iframe id="postFrame" name="postFrame" style="display:none"></iframe>
 <script>
 var SHEET_URL='https://script.google.com/macros/s/AKfycbzcxFmXaR3kFpXU7wQlXD78PnRZzRynPC7hjU6ZJ-TjDsZ3hvLoyP84dobBzqWS-Nz_/exec';
 var FIELDS=[{key:'name',label:'İsim',icon:'👤'},{key:'title',label:'Ünvan',icon:'💼'},{key:'company',label:'Şirket',icon:'🏢'},{key:'phone',label:'Telefon',icon:'📱'},{key:'email',label:'E-posta',icon:'✉️'},{key:'website',label:'Website',icon:'🌐'},{key:'address',label:'Adres',icon:'📍'},{key:'other',label:'Diğer',icon:'📝'}];
@@ -130,8 +131,50 @@ function setMode(m){captureMode=m;document.getElementById('modeCamera').classNam
 function triggerCapture(){document.getElementById(captureMode==='camera'?'cameraInput':'galleryInput').click()}
 function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function resizeImage(file,maxSize){return new Promise(function(resolve,reject){var reader=new FileReader();reader.onload=function(e){var img=new Image();img.onload=function(){var canvas=document.createElement('canvas');var w=img.width,h=img.height;if(w>maxSize||h>maxSize){if(w>h){h=Math.round(h*maxSize/w);w=maxSize}else{w=Math.round(w*maxSize/h);h=maxSize}}canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);resolve(canvas.toDataURL('image/jpeg',0.8).split(',')[1])};img.onerror=reject;img.src=e.target.result};reader.onerror=reject;reader.readAsDataURL(file)})}
-function sendToGoogleScript(base64){return fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({image:base64}),redirect:'follow'}).then(function(r){return r.json()})}
-function handleFile(e){var file=e.target.files?e.target.files[0]:null;if(!file)return;e.target.value='';document.getElementById('overlay').classList.add('show');document.getElementById('ovTitle').textContent='Kartvizit okunuyor...';document.getElementById('ovSub').textContent='AI bilgileri çıkarıyor';document.getElementById('fabBtn').disabled=true;resizeImage(file,1024).then(function(base64){document.getElementById('ovSub').textContent='Google AI analiz ediyor...';return sendToGoogleScript(base64)}).then(function(result){if(result.status==='ok'&&result.contact){contacts.unshift(result.contact);saveContacts();renderList();toast('✅ '+(result.contact.name||'Kartvizit')+' eklendi!')}else{toast('Hata: '+(result.message||'Okunamadı'),'err')}}).catch(function(err){toast('Hata: '+err.message,'err')}).finally(function(){document.getElementById('overlay').classList.remove('show');document.getElementById('fabBtn').disabled=false})}
+
+function sendToGoogle(base64){
+  return new Promise(function(resolve,reject){
+    var xhr=new XMLHttpRequest();
+    xhr.open('POST',SHEET_URL);
+    xhr.setRequestHeader('Content-Type','text/plain;charset=utf-8');
+    xhr.onload=function(){
+      try{
+        var url=xhr.responseURL||'';
+        if(xhr.status>=200&&xhr.status<400){
+          try{resolve(JSON.parse(xhr.responseText))}
+          catch(e){resolve({status:'ok',contact:null})}
+        }else{reject(new Error('HTTP '+xhr.status))}
+      }catch(e){reject(e)}
+    };
+    xhr.onerror=function(){reject(new Error('Bağlantı hatası'))};
+    xhr.send(JSON.stringify({image:base64}));
+  });
+}
+
+function handleFile(e){
+  var file=e.target.files?e.target.files[0]:null;if(!file)return;e.target.value='';
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('ovTitle').textContent='Kartvizit okunuyor...';
+  document.getElementById('ovSub').textContent='Fotoğraf hazırlanıyor...';
+  document.getElementById('fabBtn').disabled=true;
+  resizeImage(file,800).then(function(base64){
+    document.getElementById('ovSub').textContent='Google AI analiz ediyor...';
+    return sendToGoogle(base64);
+  }).then(function(result){
+    if(result&&result.status==='ok'&&result.contact){
+      contacts.unshift(result.contact);saveContacts();renderList();
+      toast('✅ '+(result.contact.name||'Kartvizit')+' eklendi!');
+    }else{
+      toast('Hata: '+(result&&result.message?result.message:'Okunamadı'),'err');
+    }
+  }).catch(function(err){
+    toast('Hata: '+err.message,'err');
+  }).finally(function(){
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('fabBtn').disabled=false;
+  });
+}
+
 function renderList(){var n=contacts.length;document.getElementById('counter').textContent=n+' kişi';document.getElementById('csvBtn').style.display=n?'':'none';document.getElementById('searchInput').style.display=n?'':'none';document.getElementById('emptyState').style.display=n?'none':'';var ib=document.getElementById('infoBar');if(n>0){ib.textContent='📊 '+n+" kartvizit Google Sheets'te kayıtlı";ib.classList.add('show')}else{ib.classList.remove('show')}var q=(document.getElementById('searchInput').value||'').toLowerCase().trim();var filtered=[];for(var i=0;i<contacts.length;i++){var c=contacts[i];if(!q){filtered.push({c:c,i:i});continue}var vals=Object.values(c);for(var j=0;j<vals.length;j++){if(typeof vals[j]==='string'&&vals[j].toLowerCase().indexOf(q)!==-1){filtered.push({c:c,i:i});break}}}var nr=document.getElementById('noResult');nr.style.display=(n&&!filtered.length&&q)?'':'none';if(n&&!filtered.length&&q)document.getElementById('noResultText').textContent='"'+q+'" bulunamadı';var html='';for(var fi=0;fi<filtered.length;fi++){var c=filtered[fi].c,idx=filtered[fi].i;var sub=[c.title,c.company].filter(Boolean).join(' · ')||'';var ph=c.phone?'<a href="tel:'+c.phone.split(',')[0].trim()+'" class="mbtn mbtn-p" onclick="event.stopPropagation()">📱</a>':'';var em=c.email?'<a href="mailto:'+c.email+'" class="mbtn mbtn-e" onclick="event.stopPropagation()">✉️</a>':'';var fields='';for(var k=0;k<FIELDS.length;k++){var f=FIELDS[k];if(c[f.key])fields+='<div class="frow"><span class="fico">'+f.icon+'</span><div><div class="flab">'+f.label+'</div><div class="fval">'+esc(c[f.key])+'</div></div></div>'}html+='<div class="card"><div class="card-hdr" onclick="toggle('+idx+')"><div style="flex:1;min-width:0"><div class="card-name">'+esc(c.name||'İsimsiz')+'</div>'+(sub?'<div class="card-sub">'+esc(sub)+'</div>':'')+'</div><div class="card-acts">'+ph+em+'<span class="chev" id="ch-'+idx+'">▼</span></div></div><div class="card-body" id="bd-'+idx+'"><div id="vw-'+idx+'">'+fields+'<div class="card-btns"><button class="btn btn-del" onclick="del('+idx+')">Sil</button><button class="btn btn-edt" onclick="edit('+idx+')">Düzenle</button><button class="btn btn-vcf" onclick="vcf('+idx+')">📥 Rehber</button></div></div><div id="ed-'+idx+'" style="display:none"></div></div></div>'}document.getElementById('contactList').innerHTML=html}
 function toggle(i){document.getElementById('bd-'+i).classList.toggle('open');document.getElementById('ch-'+i).classList.toggle('open')}
 function del(i){if(confirm('Silmek istediğinize emin misiniz?')){contacts.splice(i,1);saveContacts();renderList();toast('Kişi silindi')}}
